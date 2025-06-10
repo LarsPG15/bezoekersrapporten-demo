@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptGorillas Bezoekersrapport Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7fd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: #21325b;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+            width: 400px;
+        }
+
+        .logo {
+            display: block;
+            width: 160px;
+            margin: 0 auto 24px auto;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #d1d9e6;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            background-color: #21325b;
+            color: #ffffff;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px; /* extra ruimte boven de knop */
+            transition: background-color 0.3s ease; /* Soepelere hover */
+        }
+
+        button:hover:not(:disabled) { /* Alleen hover als niet disabled */
+            background-color: #1a2648;
+        }
+
+        button:disabled { /* Styling voor uitgeschakelde knop */
+            background-color: #a0a6b1;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            text-align: center;
+            margin-top: 18px;
+            font-weight: 600;
+        }
+
+        /* Spinner styles */
+        .spinner-container {
+            display: flex; /* Gebruik flex om de spinner te centreren */
+            justify-content: center;
+            align-items: center;
+            margin-top: 15px; /* Ruimte tussen knop en spinner */
+            height: 30px; /* Zorgt voor consistente hoogte, zelfs als spinner verborgen is */
+            visibility: hidden; /* Standaard verborgen */
+            opacity: 0; /* Standaard onzichtbaar */
+            transition: visibility 0s, opacity 0.3s ease; /* Transities voor soepel in/uitfaden */
+        }
+
+        .spinner-container.visible {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3; /* Lichtgrijze achtergrond */
+            border-top: 4px solid #21325b; /* PromptGorillas blauw voor de draaiende rand */
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            animation: spin 1s linear infinite; /* 1 seconde, lineair, eindeloos draaien */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="Promptgorillas.png" alt="PromptGorillas logo" class="logo">
+
+        <h2>Bezoekersrapport Demo</h2>
+        <form id="demoForm">
+            <label for="audioFile">Audiobestand</label>
+            <input type="file" id="audioFile" required>
+
+            <label for="advisorName">Voornaam Adviseur</label>
+            <input type="text" id="advisorName" placeholder="Voornaam adviseur" required>
+
+            <label for="guestNames">Volledige naam Gast(en)</label>
+            <input type="text" id="guestNames" placeholder="Naam gasten, gescheiden met komma's" required>
+
+            <button type="submit" id="submitButton">Lever audiobestand in</button>
+            <div id="spinnerContainer" class="spinner-container">
+                <div class="spinner"></div>
+            </div>
+        </form>
+
+        <p id="statusMessage" class="status-message"></p>
+    </div>
+
+    <script>
+        const form = document.getElementById('demoForm');
+        const submitButton = document.getElementById('submitButton'); // Referentie naar de knop
+        const spinnerContainer = document.getElementById('spinnerContainer'); // Referentie naar de spinner container
+        const statusMessage = document.getElementById('statusMessage');
+
+        function showStatus(msg, isError = false) {
+            statusMessage.textContent = msg;
+            statusMessage.style.color = isError ? '#e63946' : '#2a9d8f';
+            clearTimeout(window.statusTimer);
+            window.statusTimer = setTimeout(() => {
+                statusMessage.textContent = '';
+            }, 10000); // verdwijnt na 10 seconden
+        }
+
+        // Functie om spinner te tonen/verbergen en knopstatus te beheren
+        function setFormProcessing(isProcessing) {
+            if (isProcessing) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Verzenden...';
+                spinnerContainer.classList.add('visible'); // Toon spinner
+                showStatus(''); // Wis eerdere statusberichten
+            } else {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Lever audiobestand in';
+                spinnerContainer.classList.remove('visible'); // Verberg spinner
+            }
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('audioFile');
+            if (!fileInput.files.length) {
+                showStatus('Kies een audiobestand voordat je verzendt.', true);
+                return;
+            }
+
+            // Start verwerkingsstatus: toon spinner, schakel knop uit
+            setFormProcessing(true);
+
+            const formData = new FormData();
+            formData.append('Audiobestand', fileInput.files[0]);
+            formData.append('adviseur', document.getElementById('advisorName').value);
+            formData.append('Volledige naam Gast(en)', document.getElementById('guestNames').value);
+
+            fetch('https://n8n.promptgorillas.com/webhook/demo-bezoekersrapporten', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Serverfout');
+                return response.json();
+            })
+            .then(data => {
+                showStatus('Formulier succesvol verzonden!');
+                form.reset();
+                console.log(data);
+            })
+            .catch(error => {
+                showStatus('Er ging iets mis, probeer het opnieuw.', true);
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Einde verwerkingsstatus: verberg spinner, schakel knop in
+                setFormProcessing(false);
+            });
+        });
+    </script>
+</body>
+</html>
