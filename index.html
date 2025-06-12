@@ -192,7 +192,7 @@
             // AANGEPAST: Email voor ontvangst van het rapport
             formData.append('rapportageEmail', document.getElementById('recipientEmail').value);
 
-            fetch('https://n8n.promptgorillas.com/webhook-test/demo-bezoekersrapporten', {
+            fetch('https://n8n.promptgorillas.com/webhook/demo-bezoekersrapporten', {
                 method: 'POST',
                 body: formData
             })
